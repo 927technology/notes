@@ -1,0 +1,37 @@
+#set system password
+set system login user <user> authentication plaintext-password "<password>"
+
+#configure interface
+set interfaces ethernet <interface> address <cidr>
+set interfaces ethernet <interface> description <description>
+
+
+#configure sub-interface
+set interfaces ethernet <interface> vif <vlan-id> address <cidr>
+set interfaces ethernet <interface> vif <vlan-id> description "<discription>"
+
+
+#dhcp relay
+set service dhcp-relay server <ip-address>
+
+
+#static route
+set protocols static route <cidr> next-hop <default-gw> distance '<weight>'
+
+
+#snat - aka outbound internet
+set nat source rule <rule-id> outbound-interface <interface>
+set nat source rule <rule-id> source address <source network cidr>
+set nat source rule <rule-id> translation address masquerade
+
+#dnat - aka inbound service
+set nat destination rule <rule-id> description "<description>"
+set nat destination rule <rule-id> destinationport "<tcp-port>"
+set nat destination rule <rule-id> inbound-interface <interface>
+set nat destination rule <rule-id> protocol <tcp/udp> <protocol>
+set nat destination rule <rule-id> translation address <host-ip>
+
+
+#save
+commit
+save
