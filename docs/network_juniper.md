@@ -13,7 +13,7 @@ cli
 configure
 ```
 
-### set master password
+### master password
 #(all)
 ```
 set system master-password plain-text-password

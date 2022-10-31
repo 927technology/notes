@@ -6,7 +6,7 @@
             
             [Login as root](./docs/network_juniper.md#login-as-root)
 
-            [Set master password](./docs/network_juniper.md#set_master_password)
+            [Set master password](./docs/network_juniper.md#master-password)
 
             [Set root Password](./docs/network_juniper.md#set-root-password)
 
