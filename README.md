@@ -1,7 +1,7 @@
 # Notes
 
 * ## Juniper
-    * [Configuration](./docs/network_juniper.txt)
+    * [Configuration](./docs/network_juniper.md)
         * Initial Tasks 
             
             [Login as root](./docs/network_juniper.md#login-as-root-all)
