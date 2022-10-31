@@ -1,71 +1,106 @@
-###########Juniper Config Cheat Sheet###############
-##Created by Chris Murray
-##Updated 210928
+# Juniper Config Cheat Sheet
+## Created by Chris Murray
+## Updated 210928
 
 
-
-
-#login as root (all)
+&nbsp;
+## Initial Configuration
+---
+### login as root (all)
+```
 cli
 configure
+```
 
-#set master password (all)
+### set master password (all)
+```
 set system master-password plain-text-password
+```
 
-#stop image auto upgrage (ex4300)
+### stop image auto upgrage (ex)
+```
 delete chassis auto-image-upgrade
+```
 
-#commit to stop annoying auto upgrade notices
+### commit
+```
 commit
+````
 
-#set root password (all)
+### set root password (all)
+```
 set system root-authentication plan-text-password
+```
 
-#storage cleanup
+### storage cleanup
+```
 request system storage cleanup
+```
 
-#upgrade firmware
-##from shell 
-request shell
-mount_msdosfs /dev/<device> /mnt
-cp /mnt/<image file> /tmp
-cli
-##from ssh
-scp <image file> <user>@<remote ip>:/tmp/
-
-###local
-request system software add /mnt/<image file>
-###virtual chassis
-request system software add /mnt/<file> member <id>
-
-##set date for failed cert check
-###from cli not configuration
+### set date for failed cert check (ex)
+```
 set date 201107071700.00
+```
 
+### upgrade firmware (ex)
+* from shell 
+    ```
+    request shell
+    mount_msdosfs /dev/<device> /mnt
+    cp /mnt/<image file> /tmp
+    cli
+    ```
+ * from ssh
+    ```
+    scp <image file> <user>@<remote ip>:/tmp/
+    ```
 
-#clean up default config (ex4300)
-wildcard range delete interface ge-0/[0-2]/[0-47] | no-more
-wildcard range delete interface et-0/[0-2]/[0-47] | no-more
-wildcard range delete interface xe-0/[0-2]/[0-47] | no-more
+* local
+    ```
+    request system software add /mnt/<image file>
+    ```
 
-delete poe interface all (poe devices)
-delete protocols rstp interface all
+### virtual chassis (ex,qfx)
+* create vc port
+    ```
+    run request virtual-chassis vc-port set pic-slot <pic> port <port>
 
-#set dns (all)
+    delete protocols rstp <interface>
+    ```
+* delete vc port
+    ```
+    run request virtual-chassis vc-port delete pic-slot <pic> port <port>
+    ```
+
+### default vlans
+```
+set vlans blackhole vlan-id 999
+
+set vlans native vlan-id 998
+```
+
+### set dns (all)
+```
 set system name-server <dns1 ip>
 set system name-server <dns2 ip>
+```
 
-##time (ndm)
+### time (all)(stig-ndm)
+```
 set system ntp server <ntp1_ip> prefer
 set system ntp server <ntp2_ip>
 set system  time-zone UTC
+```
 
-#set syslog (ndm)
+### set syslog (all)(stig-ndm)
+```
 set system syslog host <syslog ip> any any
 set system syslog host <syslog ip> any info
 set system syslog source-address <mgmt ip>
+```
 
-#set snmp v3 (ndm)
+### set snmp v3 (all)(stig-ndm)
+```
 set snmp v3 usm local-engine user servicevr authentication-sha authentication-password <auth pass>
 set snmp v3 usm local-engine user servicevr privacy-aes128 privacy-password <priv pass>
 set snmp v3 vacm security-to-group security-model usm security-name servicevr group readonly
@@ -73,14 +108,20 @@ set snmp v3 vacm access group readonly default-context-prefix security-model usm
 set snmp view ro oid 1 include
 set snmp engine-id local <mgmt ip>
 set snmp view ro oid 1 include
+```
 
-#create apply groups (all)
+### create apply groups (all)(ae-interfaces)
+```
 set groups AE-SETTINGS interfaces <*> mtu 9196 aggregated-ether-options minimum-links 1 lacp active periodic fast
+```
 
-##LOGIN (ndm)
+### login (all)(stig-ndm)
+```
 set system login class superuser-local idle-timeout 10 permissions all
+```
 
-##SSH (ndm)
+### SSH (all)(stig-ndm)
+```
 set system services ssh
 set system services ssh protocol-version v2
 set system services ssh client-alive-count-max 1
@@ -89,11 +130,12 @@ set system services ssh macs [hmac-sha2-256 hmac-sha2-512]
 set system services ssh ciphers aes128-cbc
 set system services ssh root-login deny 
 
-##disconnect ssh session
 show system users no-resolve
 request system logout terminal <tty>
+```
 
-##firewall (l2)
+##firewall (ex,qfx)(stig-l2)
+```
 set firewall family inet filter local_acl term terminal_access from source-address <wht_acc-usr cidr>
 set firewall family inet filter local_acl term terminal_access from protocol tcp
 set firewall family inet filter local_acl term terminal_access from destination-port ssh
@@ -106,44 +148,51 @@ set firewall family inet filter local_acl term terminal_access_denied then log
 set firewall family inet filter local_acl term terminal_access_denied then reject
 set firewall family inet filter local_acl term default-term then accept
 set interfaces irb.<mgmt_vlan> family inet filter input local_acl
+```
 
-#firewall protect RE (routers)
-set firewall family inet filter PROTECT_RE term ALLOW_OSPF from protocol ospf
-set firewall family inet filter PROTECT_RE term ALLOW_OSPF then count OSPF
-set firewall family inet filter PROTECT_RE term ALLOW_OSPF then accept
-set firewall family inet filter PROTECT_RE term ALLOW_BGP from protocol tcp
-set firewall family inet filter PROTECT_RE term ALLOW_BGP from port bgp
-set firewall family inet filter PROTECT_RE term ALLOW_BGP then count BGP
-set firewall family inet filter PROTECT_RE term ALLOW_BGP then accept
-set firewall family inet filter PROTECT_RE term ALLOW_TCP_MANAGEMENT from destination-address <ip cidr>
-set firewall family inet filter PROTECT_RE term ALLOW_TCP_MANAGEMENT from protocol tcp
-set firewall family inet filter PROTECT_RE term ALLOW_TCP_MANAGEMENT from destination-port ssh
-set firewall family inet filter PROTECT_RE term ALLOW_TCP_MANAGEMENT then count TCP_MANAGEMENT
-set firewall family inet filter PROTECT_RE term ALLOW_TCP_MANAGEMENT then accept
-set firewall family inet filter PROTECT_RE term ALLOW_UDP_MANAGEMENT from destination-address <ip cidr>
-set firewall family inet filter PROTECT_RE term ALLOW_UDP_MANAGEMENT from protocol udp
-set firewall family inet filter PROTECT_RE term ALLOW_UDP_MANAGEMENT from destination-port ntp
-set firewall family inet filter PROTECT_RE term ALLOW_UDP_MANAGEMENT from destination-port snmp
-set firewall family inet filter PROTECT_RE term ALLOW_UDP_MANAGEMENT then count UDP_MANAGEMENT
-set firewall family inet filter PROTECT_RE term ALLOW_UDP_MANAGEMENT then accept
-set firewall family inet filter PROTECT_RE term ALLOW_ICMP from protocol icmp
-set firewall family inet filter PROTECT_RE term ALLOW_ICMP then count ICMP
-set firewall family inet filter PROTECT_RE term ALLOW_ICMP then accept
-set firewall family inet filter PROTECT_RE term ALLOW_DHCP from port dhcp
-set firewall family inet filter PROTECT_RE term ALLOW_DHCP then count DHCP
-set firewall family inet filter PROTECT_RE term ALLOW_DHCP then accept
-set firewall family inet filter PROTECT_RE term DEFAULT_DENY then count DEFAULT
-set firewall family inet filter PROTECT_RE term DEFAULT_DENY then log
-set firewall family inet filter PROTECT_RE term DEFAULT_DENY then reject
+### firewall protect RE (srx)(stig-router)
+* (srx)
+    ```
+    set firewall family inet filter PROTECT_RE term ALLOW_OSPF from protocol ospf
+    set firewall family inet filter PROTECT_RE term ALLOW_OSPF then count OSPF
+    set firewall family inet filter PROTECT_RE term ALLOW_OSPF then accept
+    set firewall family inet filter PROTECT_RE term ALLOW_BGP from protocol tcp
+    set firewall family inet filter PROTECT_RE term ALLOW_BGP from port bgp
+    set firewall family inet filter PROTECT_RE term ALLOW_BGP then count BGP
+    set firewall family inet filter PROTECT_RE term ALLOW_BGP then accept
+    set firewall family inet filter PROTECT_RE term ALLOW_TCP_MANAGEMENT from destination-address <ip cidr>
+    set firewall family inet filter PROTECT_RE term ALLOW_TCP_MANAGEMENT from protocol tcp
+    set firewall family inet filter PROTECT_RE term ALLOW_TCP_MANAGEMENT from destination-port ssh
+    set firewall family inet filter PROTECT_RE term ALLOW_TCP_MANAGEMENT then count TCP_MANAGEMENT
+    set firewall family inet filter PROTECT_RE term ALLOW_TCP_MANAGEMENT then accept
+    set firewall family inet filter PROTECT_RE term ALLOW_UDP_MANAGEMENT from destination-address <ip cidr>
+    set firewall family inet filter PROTECT_RE term ALLOW_UDP_MANAGEMENT from protocol udp
+    set firewall family inet filter PROTECT_RE term ALLOW_UDP_MANAGEMENT from destination-port ntp
+    set firewall family inet filter PROTECT_RE term ALLOW_UDP_MANAGEMENT from destination-port snmp
+    set firewall family inet filter PROTECT_RE term ALLOW_UDP_MANAGEMENT then count UDP_MANAGEMENT
+    set firewall family inet filter PROTECT_RE term ALLOW_UDP_MANAGEMENT then accept
+    set firewall family inet filter PROTECT_RE term ALLOW_ICMP from protocol icmp
+    set firewall family inet filter PROTECT_RE term ALLOW_ICMP then count ICMP
+    set firewall family inet filter PROTECT_RE term ALLOW_ICMP then accept
+    set firewall family inet filter PROTECT_RE term ALLOW_DHCP from port dhcp
+    set firewall family inet filter PROTECT_RE term ALLOW_DHCP then count DHCP
+    set firewall family inet filter PROTECT_RE term ALLOW_DHCP then accept
+    set firewall family inet filter PROTECT_RE term DEFAULT_DENY then count DEFAULT
+    set firewall family inet filter PROTECT_RE term DEFAULT_DENY then log
+    set firewall family inet filter PROTECT_RE term DEFAULT_DENY then reject
+    ```
+* (ex, qfx, srx)(not production ready)
+    ```
+    set firewall filter copp_policy term critical from protocol ospf
+    set firewall filter copp_policy term critical from protocol pim
+    set firewall filter copp_policy term critical from protocol tcp destination-port bgp
+    set firewall filter copp_policy term critical from protocol tcp source-port bgp
+    set firewall filter copp_policy term critical then policier critical
+    ```
 
-#firewall L3 devices only (not production ready)
-set firewall filter copp_policy term critical from protocol ospf
-set firewall filter copp_policy term critical from protocol pim
-set firewall filter copp_policy term critical from protocol tcp destination-port bgp
-set firewall filter copp_policy term critical from protocol tcp source-port bgp
-set firewall filter copp_policy term critical then policier critical
+### policier (qfx,srx)(not production ready)
 
-#policer L3 devices only (not production ready)
+```
 set firewall policer critical filter-specific
 set firewall policer critical if-exceeding bandwitch-limit 400000 burst-size-limit 1500
 set firewall policer critical then discard
@@ -163,8 +212,10 @@ set firewall policer undesirable then discard
 set firewall policer all-other filter-specific
 set firewall policer all-other if-exceeding bandwitch-limit 32000 burst-size-limit 1500
 set firewall policer all-other then discard
+```
 
-#idp (firewall)
+### idp (srx)(stig-firewall)
+```
 set security idp idp-policy srx-policy rulebase-ips rule ddos description "Configured to confirm to STIGs JUSX-IP-000005, JUSX-IP-000006, and JUSX-IP-000007, JUSX-IP-000019"
 set security idp idp-policy srx-policy rulebase-ips rule ddos match attacks dynamic-attack-groups ddos-attacks
 set security idp idp-policy srx-policy rulebase-ips rule ddos then action no-action
@@ -247,8 +298,10 @@ set security idp dynamic-attack-group malicious-activity filters category values
 set security idp security-package automatic start-time "2021-9-1.11:00:00 +0000"
 set security idp security-package automatic interval 24
 set security idp security-package automatic enable
+```
 
-#ids (firewall)
+### ids (srx)(stig-firewall)
+```
 set security screen ids-option untrust-screen icmp ip-sweep threshold 1000
 set security screen ids-option untrust-screen icmp ping-death
 set security screen ids-option untrust-screen ip bad-option
@@ -282,8 +335,10 @@ set security screen ids-option untrust-screen tcp syn-flood timeout 20
 set security screen ids-option untrust-screen tcp land
 set security screen ids-option untrust-screen udp flood threshold 5000
 set security screen ids-option untrust-screen udp udp-sweep threshold 1000
+```
 
-#utm - universal threat manager (firewall)
+### universal threat manager (srx)(stig-firewall)
+```
 set security utm custom-objects mime-pattern shockwave_flash value video/x-shockwave-flash
 set security utm custom-objects mime-pattern bypass-mime value text/css
 set security utm custom-objects mime-pattern bypass-mime value audio/
@@ -314,50 +369,66 @@ set security utm utm-policy utm-policy anti-virus pop3-profile av-profile
 set security utm utm-policy utm-policy anti-virus imap-profile av-profile
 deactivate security utm utm-policy utm-policy anti-virus
 set security utm utm-policy utm-policy content-filtering http-profile content-filtering-profile
+```
 
-#security zones (firewall)
+### security zones (srx)(stig-firewall)
+```
 set security zones security-zone <zone> interfaces <interface>
 ##as needed
 set security zones security-zone <zone> host-inbound-traffic system-services ping
 set security zones security-zone <zone> host-inbound-traffic system-services dhcp
 set security zones security-zone <zone> host-inbound-traffic system-services ssh
+```
 
-#security policies (firewall)
+### security policies (srx)(stig-firewall)
+```
 set security policies from-zone <zone> to-zone <zone> poicy <policy name> match source address <ip cidr or any>
 set security policies from-zone <zone> to-zone <zone> poicy <policy name> match desination address <ip cidr or any>
 set security policies from-zone <zone> to-zone <zone> poicy <policy name> match application <application name or any>
 set security policies from-zone <zone> to-zone <zone> poicy <policy name> then <action>
+```
 
-##default deny policy (firewall) req by stig to be the last policy in each ruleset
+### default deny policy (srx)(stig-firewall)(required at the end of each ruleset)
+```
 set security policies from-zone <zone> to-zone <zone> policy default-deny match source-address any
 set security policies from-zone <zone> to-zone <zone> policy default-deny match destination-address any
 set security policies from-zone <zone> to-zone <zone> policy default-deny match application any
 set security policies from-zone <zone> to-zone <zone> policy default-deny then deny
+```
 
-#applications (firewall)
+### applications (srx)(stig-firewall)
+```
 set applications application <name> protocol <tcp/udp>
 set applications application <name> destination-port <port>
 set applications application <name> inactivity-timeout <timeout (900)>
-##application set
-set applications application-set <name> application <application name>
+```
 
-#ipsec fips compliant (firewall)
+### application set (srx)
+```
+set applications application-set <name> application <application name>
+```
+
+### ipsec fips compliant (srx)(stig-firewall)
+```
 set security ipsec internal security-association manual encryption algorithm aes-128-cbc
 set security ipsec internal security-association manual encryption ike-ha-link-encryption enable
 set security ipsec internal security-association manual encryption key ascii-text <key>
+```
 
+### address book (srx)
+* global
+    ```
+    set security address-book global address <name> <host cidr>
+    set security address-book global address-set <name> address <address-book name>
+    ```
+* per security zone
+    ```
+    set security zones security-zone <zone name> address-book <name> <host cidr>
+    set security zones security-zone <zone name> address-set <name> address <address-book name>
+    ```
 
-
-#address book (as needed)
-##global
-set security address-book global address <name> <host cidr>
-set security address-book global address-set <name> address <address-book name>
-##per security zone
-set security zones security-zone <zone name> address-book <name> <host cidr>
-set security zones security-zone <zone name> address-set <name> address <address-book name>
-
-
-#audit (ndm)
+### audit (all)(stig-ndm)
+```
 set system syslog file LOG_FILE any any
 set system syslog file LOG_FILE any info
 set system syslog file LOG_FILE security info
@@ -370,14 +441,18 @@ set system syslog file LOG_FILE archive files 12 size 1000000
 
 set system syslog host <syslog ip> any info
 set system syslog host <syslog ip> any critical
+```
 
-##console (ndm)
+##console (all)(stig-ndm)
+```
 set system ports console log-out-on-disconnect
 set system ports console type vt100
 set system ports auxiliary disable
 set system ports auxiliary insecure
+```
 
-##login (ndm)
+### login (all)(stig-ndm)
+```
 set system login password minimum-length 15
 set system login password minimum-upper-cases 1
 set system login password minimum-lower-cases 1
@@ -399,60 +474,65 @@ set system login class JR_ENGINEER permission all
 set system login class JR_ENGINEER deny-configuration "(system syslog)"
 set system login class JR_ENGINEER deny-commands "(file delete)"
 set system login class JR_ENGINEER deny-commands "(request system software)"
+```
 
-
-#backup - CREATE BACKUP LOCATION FIRST (ndm)
+### backup (all)(stig-ndm)
+```
 set system archival configuration transfer-on-commit archive-sites "scp://<service_account>@<backup server ip>:<file_path>" password "password"
+```
 
-#set hostname
+### set hostname
+```
 set system host-name <name>
+```
 
-#set default route
+### default route
+```
 set routing-options static route 0.0.0.0/0 next-hop <gw address>
+```
 
-##igmp-snooping
+### igmp-snooping
+```
 set protocols igmp-snooping vlan all
+```
 
-##mld-snooping
+### mld-snooping
+```
 set protocols mld-snooping vlan all
+```
 
-#banner
-set system login announcement "You are accessing a U.S. Government (USG) Information System (IS) that is provided\nfor USG-authorized use only.\n\nBy using this IS (which includes any device attached to this IS), you consent to the\nfollowing conditions:\n\n-The USG routinely intercepts and monitors communications on this IS for purposes\nincluding, but not limited to, penetration testing, COMSEC monitoring, network\noperations and defense, personnel misconduct (PM), law enforcement (LE), and\ncounterintelligence (CI) investigations.\n\n-At any time, the USG may inspect and seize data stored on this IS.\n\n-Communications using, or data stored on, this IS are not private, are subject to routine\nmonitoring, interception, and search, and may be disclosed or used for any USG-\nauthorized purpose.\n\n-This IS includes security measures (e.g., authentication and access controls) to protect\nUSG interests--not for your personal benefit or privacy.\n\n-Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI\ninvestigative searching or monitoring of the content of privileged communications, or\nwork product, related to personal representation or services by attorneys,\npsychotherapists, or clergy, and their assistants. Such communications and work product\nare private and confidential. See User Agreement for details."
+### banner
+* DoD
+    ```
+    set system login announcement "You are accessing a U.S. Government (USG) Information System (IS) that is provided\nfor USG-authorized use only.\n\nBy using this IS (which includes any device attached to this IS), you consent to the\nfollowing conditions:\n\n-The USG routinely intercepts and monitors communications on this IS for purposes\nincluding, but not limited to, penetration testing, COMSEC monitoring, network\noperations and defense, personnel misconduct (PM), law enforcement (LE), and\ncounterintelligence (CI) investigations.\n\n-At any time, the USG may inspect and seize data stored on this IS.\n\n-Communications using, or data stored on, this IS are not private, are subject to routine\nmonitoring, interception, and search, and may be disclosed or used for any USG-\nauthorized purpose.\n\n-This IS includes security measures (e.g., authentication and access controls) to protect\nUSG interests--not for your personal benefit or privacy.\n\n-Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI\ninvestigative searching or monitoring of the content of privileged communications, or\nwork product, related to personal representation or services by attorneys,\npsychotherapists, or clergy, and their assistants. Such communications and work product\nare private and confidential. See User Agreement for details."
+    ```
 
-#create super-user
+### create super-user
+```
 set system login user kadmin full-name "KTTE Admin" class super-user
 set system login user kadmin authentication plain-text-password 
+```
 
 ##PORT RELATED TASKS
 
-#delete vc-port
-run request virtual-chassis vc-port delete pic-slot 1 port 0
-run request virtual-chassis vc-port delete pic-slot 1 port 1
-run request virtual-chassis vc-port delete pic-slot 1 port 2
-run request virtual-chassis vc-port delete pic-slot 1 port 3
-
-##if is a member of a vc group
-run request virtual-chassis vc-port delete pic-slot 1 member <stack #> port 0
-
-#set if virtual-chassis
+### set if virtual-chassis
+```
 set virtual-chassis preprovisioned
 set virtual-chassis member 0 serial-number <serial> role routing-engine
 set virtual-chassis member 1 serial-number <serial> role routing-engine
 set virtual-chassis member 2 serial-number <serial> role line-card
 set system commit synchronize
 set virtual-chassis no-split-detection
+```
 
-#set management interface
+### set management interface
+```
 set interfaces irb unit <mgmt-vlan ##99> family inet address <cidr>
 set vlan <vlan name> vlan-id <vlan id ##99> l3-interface irb.<vlan id  ##99>
+```
 
-#create vlans ##02, ##95, native, and blackhole
-set vlans <vlan name> vlan-id <vlan id ##02>
-set vlans <vlan name> vlan-id <vlan id ##95>
-set vlan native vlan-id 998
-set vlan blackhole vlan-id 999
-
-#dhcp snooping
+### dhcp snooping
+```
 set vlans <user vlan name> forwarding-options dhcp-security
 set vlans <user vlan name> forwarding-options dhcp-security ip-source-guard
 set vlans <user vlan name> forwarding-options dhcp-security ip6-source-guard
@@ -463,8 +543,10 @@ set vlans <user vlan name> forwarding-options dhcp-security group <group name> i
 ##disable dhcp snooping
 set vlans <user vlan name> forwarding-options dhcp-security no-dhcp-snooping
 set vlans <user vlan name> forwarding-options dhcp-security no-dhcpv6-snooping
+```
 
-#create lag interface
+### create lag interface
+```
 set interface ae0 apply-groups AE-SETTINGS
 set chassis aggregated-devices ethernet device-count 1
 wildcard range delete interfaces et-0/1/[0-1]
@@ -474,23 +556,32 @@ set interfaces ae0 description ae0 -> <remote building>-<ae interface>
 set interfaces ae0 aggregated-ether-optins lacp active
 set interfaces ae0 unit 0 family ethernet-switching inteface-mode trunk vlan members [ ##02 ##95 ##99 ]
 set interfaces ae0 native-vlan-id 998
+```
 
-#interconnect between qfx5100 and ex4300 qsfp ports does not work with auto-negotiation enabled on the ex4300
+### interconnect between qfx5100 and ex4300 qsfp ports does not work with auto-negotiation enabled on the ex4300
+```
 set interface <iface> ether-options no-auto-negotiation
+```
 
-
-#voip
+### voip
+```
 set protocols lldp-med interface <iface>
 set switch options voip interface <iface>.0 vlan <voip vlan>
+```
 
-#port ranges - delete configurations
+### port ranges - delete configurations
+```
 wildcard range delete interface ge-0/0/[0-47]
 wildcard range delete interface et-0/1/[0-3]
 wildcard range delete interface xe-0/1/[2-3]
 wildcard range delete interface ge-0/2/[0-3]
 wildcard range delete interface et-0/2/[0-3]
 
-#port ranges - set blackhole
+delete vlans default
+```
+
+### port ranges - vlans (blackhole)
+```
 wildcard range set interface ge-0/0/[0-47] unit 0 family ethernet-switching vlan members blackhole
 wildcard range set interface ge-0/0/[0-47] description disabled
 wildcard range set interface ge-0/0/[0-47] disable
@@ -510,35 +601,47 @@ wildcard range set interface ge-0/2/[0-3] disable
 wildcard range set interface xe-0/2/[0-3] unit 0 family ethernet-switching vlan members blackhole
 wildcard range set interface xe-0/2/[0-3] description disabled
 wildcard range set interface xe-0/2/[0-3] disable
+```
 
-##port security (l2)
+### port security (ex)(stig-l2)
+```
 wildcard range set switch-options interface ge-0/0/[0-47] interface-mac-limit 1
 wildcard range set switch-options interface ge-0/0/[0-47] persistent-learning
 wildcard range set switch-options interface ge-0/0/[0-47] interface-mac-limit packet-action shutdown
+```
 
-##spanning tree (l2)
+### spanning tree (ex)(stig-l2)
+```
 wildcard range set protocols rstp interface ge-0/0/[<access port range>]
 wildcard range set protocols layer2-control bpdu-block interface ge-0/0/[<access port range>]
 set protocols rstp bpdu-block-on-edge
 wildcard range set protocols rstp interface ge-0/0/[<access port range>] no-root-port
 wildcard range set protocols rstp interface ge-0/0/[<access port range> edge
+```
 
-#uufb (l2)
+#uufb (ex)(stig-l2)
+```
 set switch-options unknown-unicast-forwarding vlan <vlan with access ports> interface <interface to forward to>
+```
 
-#storm control (l2)
+### storm control (ex)(stig-l2)
+```
 set forwarding-options storm-control-profiles default all bandwidth-percentage 80
 set interfaces <access interface> unit 0 family ethernet-switching storm-control default
+```
 
-#rsa keyfile login (do not use)
+### rsa keyfile login (do not use)
+```
 set system login user <username> class <class> authentication load-key-file <path to pub keyfile>
 ##keyfile can be local fs or scp "scp://<user>@<remote ip>:<path>"
+```
 
-#source nat
+### source nat
+```
 set security nat source rule-set <rule set name> from zone <from internal zone>
 set security nat source rule-set <rule set name> to zone <untrust zone>
 
 set security nat source rule-set <rule set name> rule <rule name> match source-address <internal cidr>
 set security nat source rule-set <rule set name> rule <rule name> match destination-address 0.0.0.0/0
 set security nat source rule-set <rule set name> rule <rule name> then source-nat interface
-
+```
