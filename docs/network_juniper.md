@@ -6,18 +6,21 @@
 &nbsp;
 ## Initial Configuration
 ---
-### login as root (all)
+### login as root
+#(all)
 ```
 cli
 configure
 ```
 
-### set master password (all)
+### set master password
+#(all)
 ```
 set system master-password plain-text-password
 ```
 
-### stop image auto upgrage (ex)
+### stop image auto upgrage
+#(ex)
 ```
 delete chassis auto-image-upgrade
 ```
@@ -25,24 +28,32 @@ delete chassis auto-image-upgrade
 ### commit
 ```
 commit
-````
+#or
+commit confirmed <num minutes>
+```
 
-### set root password (all)
+### set root password
+#(all)
 ```
 set system root-authentication plan-text-password
 ```
 
-### storage cleanup
-```
-request system storage cleanup
-```
 
-### set date for failed cert check (ex)
-```
-set date 201107071700.00
-```
 
-### upgrade firmware (ex)
+### upgrade firmware
+#(ex)
+    ### storage cleanup
+    #(all)
+    ```
+    request system storage cleanup
+    ```
+
+    ### set date for failed cert check
+    #(ex)
+    ```
+    set date 201107071700.00
+    ```
+
 * from shell 
     ```
     request shell
@@ -55,72 +66,98 @@ set date 201107071700.00
     scp <image file> <user>@<remote ip>:/tmp/
     ```
 
-* local
+
+* install
     ```
     request system software add /mnt/<image file>
     ```
 
-### virtual chassis (ex,qfx)
-* create vc port
-    ```
-    run request virtual-chassis vc-port set pic-slot <pic> port <port>
 
-    delete protocols rstp <interface>
-    ```
-* delete vc port
-    ```
-    run request virtual-chassis vc-port delete pic-slot <pic> port <port>
-    ```
+### set hostname
+```
+set system host-name <name>
+```
+
+### default route
+```
+set routing-options static route 0.0.0.0/0 next-hop <gw address>
+```
 
 ### default vlans
+#(ex,qfx)
 ```
+delete vlans default
+
 set vlans blackhole vlan-id 999
 
 set vlans native vlan-id 998
 ```
+### default irb
+#(ex,qfx)
+```
+delete interface irb.0
+```
 
-### set dns (all)
+### dns
+#(all)
 ```
 set system name-server <dns1 ip>
 set system name-server <dns2 ip>
 ```
 
-### time (all)(stig-ndm)
+### ntp
+#(all)(stig-ndm)
 ```
 set system ntp server <ntp1_ip> prefer
 set system ntp server <ntp2_ip>
 set system  time-zone UTC
 ```
 
-### set syslog (all)(stig-ndm)
+### console
+#(all)(stig-ndm)
 ```
-set system syslog host <syslog ip> any any
-set system syslog host <syslog ip> any info
-set system syslog source-address <mgmt ip>
-```
-
-### set snmp v3 (all)(stig-ndm)
-```
-set snmp v3 usm local-engine user servicevr authentication-sha authentication-password <auth pass>
-set snmp v3 usm local-engine user servicevr privacy-aes128 privacy-password <priv pass>
-set snmp v3 vacm security-to-group security-model usm security-name servicevr group readonly
-set snmp v3 vacm access group readonly default-context-prefix security-model usm security-level privacy read-view ro
-set snmp view ro oid 1 include
-set snmp engine-id local <mgmt ip>
-set snmp view ro oid 1 include
+set system ports console log-out-on-disconnect
+set system ports console type vt100
+set system ports auxiliary disable
+set system ports auxiliary insecure
 ```
 
-### create apply groups (all)(ae-interfaces)
+### login
+#(all)(stig-ndm)
 ```
-set groups AE-SETTINGS interfaces <*> mtu 9196 aggregated-ether-options minimum-links 1 lacp active periodic fast
-```
+set system login password minimum-length 15
+set system login password minimum-upper-cases 1
+set system login password minimum-lower-cases 1
+set system login password minimum-numerics 1
+set system login password minimum-punctuations 1
 
-### login (all)(stig-ndm)
-```
+set system login retry-options tries-before-disconnect 3
+set system login retry-options lockout-period 15
+
 set system login class superuser-local idle-timeout 10 permissions all
+
+set system login class ADMIN idle-timeout 10 permissions admin-control
+
+set system login class AUDITOR permissions [configure view-configuration]
+set system login class AUDITOR allow-configuration "(system syslog)"
+
+set system login class SR_ENGINEER permissions all
+set system login class SR_ENGINEER deny-configuration "(system syslog)"
+
+set system login class JR_ENGINEER permission all
+set system login class JR_ENGINEER deny-configuration "(system syslog)"
+set system login class JR_ENGINEER deny-commands "(file delete)"
+set system login class JR_ENGINEER deny-commands "(request system software)"
 ```
 
-### SSH (all)(stig-ndm)
+### backup
+#(all)(stig-ndm)
+```
+set system archival configuration transfer-on-commit archive-sites "scp://<service_account>@<backup server ip>:<file_path>" password "password"
+```
+
+### ssh 
+#(all)(stig-ndm)
 ```
 set system services ssh
 set system services ssh protocol-version v2
@@ -134,7 +171,201 @@ show system users no-resolve
 request system logout terminal <tty>
 ```
 
-##firewall (ex,qfx)(stig-l2)
+### syslog
+#(all)(stig-ndm)
+```
+set system syslog host <syslog ip> any any
+set system syslog host <syslog ip> any info
+set system syslog source-address <mgmt ip>
+```
+
+### snmp
+#(all)(stig-ndm)
+```
+set snmp v3 usm local-engine user servicevr authentication-sha authentication-password <auth pass>
+set snmp v3 usm local-engine user servicevr privacy-aes128 privacy-password <priv pass>
+set snmp v3 vacm security-to-group security-model usm security-name servicevr group readonly
+set snmp v3 vacm access group readonly default-context-prefix security-model usm security-level privacy read-view ro
+set snmp view ro oid 1 include
+set snmp engine-id local <mgmt ip>
+set snmp view ro oid 1 include
+```
+
+### audit
+#(all)(stig-ndm)
+```
+set system syslog file LOG_FILE any any
+set system syslog file LOG_FILE any info
+set system syslog file LOG_FILE security info
+set system syslog file LOG_FILE interactive-commands any
+set system syslog file LOG_FILE change-log info
+set system syslog file LOG_FILE authorization info
+set system syslog file LOG_FILE firewall info
+set system syslog file LOG_FILE authorization info
+set system syslog file LOG_FILE archive files 12 size 1000000
+
+set system syslog host <syslog ip> any info
+set system syslog host <syslog ip> any critical
+```
+
+
+
+#interfaces
+### access
+```
+set interfaces <interface> unit 0 family ethernet-switching
+set interfaces <interface> unit 0 family ethernet-switching inteface-mode access 
+set interfaces <interface> unit 0 family ethernet-switching vlan members <vlan1>
+set interfaces <interface> unit 0 description <description>
+```
+
+### ae
+```
+set groups AE-SETTINGS interfaces <*> mtu 9196 aggregated-ether-options minimum-links 1 lacp active periodic fast
+
+set interface <ae interface> apply-groups AE-SETTINGS
+set chassis aggregated-devices ethernet device-count <total ae interface count>
+wildcard range delete interfaces <interfaces to be added to ae>
+wildcard range delete protocols rstp interface <interfaces to be added to ae>
+wildcard range set interfaces <interfaces to be added to ae> ether-options 802.3ad <ae interface>
+set interfaces <ae interface> description <remote_switch>-><remote interface>
+set interfaces <ae interface> aggregated-ether-optins lacp active
+
+```
+
+### irb
+```
+set interface irb unit <irb id> family inet address <cidr>
+```
+
+### l3
+```
+set interface <interface> unit 0 family inet address <cidr>
+```
+
+### trunk
+```
+set interfaces <interface> unit 0 family ethernet-switching
+set interfaces <interface> unit 0 family ethernet-switching inteface-mode trunk 
+set interfaces <interface> unit 0 family ethernet-switching vlan members [<vlan1> <vlan2>]
+set interfaces <interface> unit 0 description <remote_switch_name>-><remote_switch_port>
+set interfaces <interface> native-vlan-id <native vlan id>
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### virtual chassis
+#(ex,qfx)
+* create vc port
+    ```
+    run request virtual-chassis vc-port set pic-slot <pic> port <port>
+
+    delete protocols rstp <interface>
+    ```
+* delete vc port
+    ```
+    run request virtual-chassis vc-port delete pic-slot <pic> port <port>
+    ```
+
+
+
+### apply groups
+#(all)(ae-interfaces)
+```
+set groups AE-SETTINGS interfaces <*> mtu 9196 aggregated-ether-options minimum-links 1 lacp active periodic fast
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### igmp-snooping
+```
+set protocols igmp-snooping vlan all
+```
+
+### mld-snooping
+```
+set protocols mld-snooping vlan all
+```
+
+### banner
+* DoD
+    ```
+    set system login announcement "You are accessing a U.S. Government (USG) Information System (IS) that is provided\nfor USG-authorized use only.\n\nBy using this IS (which includes any device attached to this IS), you consent to the\nfollowing conditions:\n\n-The USG routinely intercepts and monitors communications on this IS for purposes\nincluding, but not limited to, penetration testing, COMSEC monitoring, network\noperations and defense, personnel misconduct (PM), law enforcement (LE), and\ncounterintelligence (CI) investigations.\n\n-At any time, the USG may inspect and seize data stored on this IS.\n\n-Communications using, or data stored on, this IS are not private, are subject to routine\nmonitoring, interception, and search, and may be disclosed or used for any USG-\nauthorized purpose.\n\n-This IS includes security measures (e.g., authentication and access controls) to protect\nUSG interests--not for your personal benefit or privacy.\n\n-Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI\ninvestigative searching or monitoring of the content of privileged communications, or\nwork product, related to personal representation or services by attorneys,\npsychotherapists, or clergy, and their assistants. Such communications and work product\nare private and confidential. See User Agreement for details."
+    ```
+
+### create super-user
+```
+set system login user kadmin full-name "KTTE Admin" class super-user
+set system login user kadmin authentication plain-text-password 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+### firewall 
+#(ex,qfx)(stig-l2)
 ```
 set firewall family inet filter local_acl term terminal_access from source-address <wht_acc-usr cidr>
 set firewall family inet filter local_acl term terminal_access from protocol tcp
@@ -150,7 +381,8 @@ set firewall family inet filter local_acl term default-term then accept
 set interfaces irb.<mgmt_vlan> family inet filter input local_acl
 ```
 
-### firewall protect RE (srx)(stig-router)
+### firewall protect RE
+#(srx)(stig-router)
 * (srx)
     ```
     set firewall family inet filter PROTECT_RE term ALLOW_OSPF from protocol ospf
@@ -190,7 +422,8 @@ set interfaces irb.<mgmt_vlan> family inet filter input local_acl
     set firewall filter copp_policy term critical then policier critical
     ```
 
-### policier (qfx,srx)(not production ready)
+### policier
+#(qfx,srx)(not production ready)
 
 ```
 set firewall policer critical filter-specific
@@ -214,7 +447,8 @@ set firewall policer all-other if-exceeding bandwitch-limit 32000 burst-size-lim
 set firewall policer all-other then discard
 ```
 
-### idp (srx)(stig-firewall)
+### idp 
+#(srx)(stig-firewall)
 ```
 set security idp idp-policy srx-policy rulebase-ips rule ddos description "Configured to confirm to STIGs JUSX-IP-000005, JUSX-IP-000006, and JUSX-IP-000007, JUSX-IP-000019"
 set security idp idp-policy srx-policy rulebase-ips rule ddos match attacks dynamic-attack-groups ddos-attacks
@@ -300,7 +534,8 @@ set security idp security-package automatic interval 24
 set security idp security-package automatic enable
 ```
 
-### ids (srx)(stig-firewall)
+### ids
+#(srx)(stig-firewall)
 ```
 set security screen ids-option untrust-screen icmp ip-sweep threshold 1000
 set security screen ids-option untrust-screen icmp ping-death
@@ -337,7 +572,8 @@ set security screen ids-option untrust-screen udp flood threshold 5000
 set security screen ids-option untrust-screen udp udp-sweep threshold 1000
 ```
 
-### universal threat manager (srx)(stig-firewall)
+### universal threat manager
+#(srx)(stig-firewall)
 ```
 set security utm custom-objects mime-pattern shockwave_flash value video/x-shockwave-flash
 set security utm custom-objects mime-pattern bypass-mime value text/css
@@ -371,7 +607,8 @@ deactivate security utm utm-policy utm-policy anti-virus
 set security utm utm-policy utm-policy content-filtering http-profile content-filtering-profile
 ```
 
-### security zones (srx)(stig-firewall)
+### security zones
+#(srx)(stig-firewall)
 ```
 set security zones security-zone <zone> interfaces <interface>
 ##as needed
@@ -380,7 +617,8 @@ set security zones security-zone <zone> host-inbound-traffic system-services dhc
 set security zones security-zone <zone> host-inbound-traffic system-services ssh
 ```
 
-### security policies (srx)(stig-firewall)
+### security policies
+#(srx)(stig-firewall)
 ```
 set security policies from-zone <zone> to-zone <zone> poicy <policy name> match source address <ip cidr or any>
 set security policies from-zone <zone> to-zone <zone> poicy <policy name> match desination address <ip cidr or any>
@@ -388,7 +626,8 @@ set security policies from-zone <zone> to-zone <zone> poicy <policy name> match 
 set security policies from-zone <zone> to-zone <zone> poicy <policy name> then <action>
 ```
 
-### default deny policy (srx)(stig-firewall)(required at the end of each ruleset)
+### security policies - default deny
+#(srx)(stig-firewall)(required at the end of each ruleset)
 ```
 set security policies from-zone <zone> to-zone <zone> policy default-deny match source-address any
 set security policies from-zone <zone> to-zone <zone> policy default-deny match destination-address any
@@ -396,26 +635,30 @@ set security policies from-zone <zone> to-zone <zone> policy default-deny match 
 set security policies from-zone <zone> to-zone <zone> policy default-deny then deny
 ```
 
-### applications (srx)(stig-firewall)
+### security policies - applications
+#(srx)(stig-firewall)
 ```
 set applications application <name> protocol <tcp/udp>
 set applications application <name> destination-port <port>
 set applications application <name> inactivity-timeout <timeout (900)>
 ```
 
-### application set (srx)
+### security policies - application set
+#(srx)
 ```
 set applications application-set <name> application <application name>
 ```
 
-### ipsec fips compliant (srx)(stig-firewall)
+### ipsec fips compliant
+#(srx)(stig-firewall)
 ```
 set security ipsec internal security-association manual encryption algorithm aes-128-cbc
 set security ipsec internal security-association manual encryption ike-ha-link-encryption enable
 set security ipsec internal security-association manual encryption key ascii-text <key>
 ```
 
-### address book (srx)
+### address book
+#(srx)
 * global
     ```
     set security address-book global address <name> <host cidr>
@@ -427,91 +670,6 @@ set security ipsec internal security-association manual encryption key ascii-tex
     set security zones security-zone <zone name> address-set <name> address <address-book name>
     ```
 
-### audit (all)(stig-ndm)
-```
-set system syslog file LOG_FILE any any
-set system syslog file LOG_FILE any info
-set system syslog file LOG_FILE security info
-set system syslog file LOG_FILE interactive-commands any
-set system syslog file LOG_FILE change-log info
-set system syslog file LOG_FILE authorization info
-set system syslog file LOG_FILE firewall info
-set system syslog file LOG_FILE authorization info
-set system syslog file LOG_FILE archive files 12 size 1000000
-
-set system syslog host <syslog ip> any info
-set system syslog host <syslog ip> any critical
-```
-
-##console (all)(stig-ndm)
-```
-set system ports console log-out-on-disconnect
-set system ports console type vt100
-set system ports auxiliary disable
-set system ports auxiliary insecure
-```
-
-### login (all)(stig-ndm)
-```
-set system login password minimum-length 15
-set system login password minimum-upper-cases 1
-set system login password minimum-lower-cases 1
-set system login password minimum-numerics 1
-set system login password minimum-punctuations 1
-
-set system login retry-options tries-before-disconnect 3
-set system login retry-options lockout-period 15
-
-set system login class ADMIN idle-timeout 10 permissions admin-control
-
-set system login class AUDITOR permissions [configure view-configuration]
-set system login class AUDITOR allow-configuration "(system syslog)"
-
-set system login class SR_ENGINEER permissions all
-set system login class SR_ENGINEER deny-configuration "(system syslog)"
-
-set system login class JR_ENGINEER permission all
-set system login class JR_ENGINEER deny-configuration "(system syslog)"
-set system login class JR_ENGINEER deny-commands "(file delete)"
-set system login class JR_ENGINEER deny-commands "(request system software)"
-```
-
-### backup (all)(stig-ndm)
-```
-set system archival configuration transfer-on-commit archive-sites "scp://<service_account>@<backup server ip>:<file_path>" password "password"
-```
-
-### set hostname
-```
-set system host-name <name>
-```
-
-### default route
-```
-set routing-options static route 0.0.0.0/0 next-hop <gw address>
-```
-
-### igmp-snooping
-```
-set protocols igmp-snooping vlan all
-```
-
-### mld-snooping
-```
-set protocols mld-snooping vlan all
-```
-
-### banner
-* DoD
-    ```
-    set system login announcement "You are accessing a U.S. Government (USG) Information System (IS) that is provided\nfor USG-authorized use only.\n\nBy using this IS (which includes any device attached to this IS), you consent to the\nfollowing conditions:\n\n-The USG routinely intercepts and monitors communications on this IS for purposes\nincluding, but not limited to, penetration testing, COMSEC monitoring, network\noperations and defense, personnel misconduct (PM), law enforcement (LE), and\ncounterintelligence (CI) investigations.\n\n-At any time, the USG may inspect and seize data stored on this IS.\n\n-Communications using, or data stored on, this IS are not private, are subject to routine\nmonitoring, interception, and search, and may be disclosed or used for any USG-\nauthorized purpose.\n\n-This IS includes security measures (e.g., authentication and access controls) to protect\nUSG interests--not for your personal benefit or privacy.\n\n-Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI\ninvestigative searching or monitoring of the content of privileged communications, or\nwork product, related to personal representation or services by attorneys,\npsychotherapists, or clergy, and their assistants. Such communications and work product\nare private and confidential. See User Agreement for details."
-    ```
-
-### create super-user
-```
-set system login user kadmin full-name "KTTE Admin" class super-user
-set system login user kadmin authentication plain-text-password 
-```
 
 ##PORT RELATED TASKS
 
@@ -619,7 +777,7 @@ wildcard range set protocols rstp interface ge-0/0/[<access port range>] no-root
 wildcard range set protocols rstp interface ge-0/0/[<access port range> edge
 ```
 
-#uufb (ex)(stig-l2)
+### uufb (ex)(stig-l2)
 ```
 set switch-options unknown-unicast-forwarding vlan <vlan with access ports> interface <interface to forward to>
 ```
