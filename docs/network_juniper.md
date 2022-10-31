@@ -42,14 +42,13 @@ set system root-authentication plan-text-password
 
 ### upgrade firmware
 #(ex)
-    ### storage cleanup
-    #(all)
+
+* storage cleanup
     ```
     request system storage cleanup
     ```
 
-    ### set date for failed cert check
-    #(ex)
+* set date for failed cert check
     ```
     set date 201107071700.00
     ```
@@ -65,7 +64,6 @@ set system root-authentication plan-text-password
     ```
     scp <image file> <user>@<remote ip>:/tmp/
     ```
-
 
 * install
     ```
